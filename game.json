@@ -1,0 +1,181 @@
+{
+	"width": 1280,
+	"height": 720,
+	"fps": 30,
+	"main": "./script/main.js",
+	"assets": {
+		"shot": {
+			"type": "image",
+			"width": 16,
+			"height": 16,
+			"path": "image/shot.png"
+		},
+		"se": {
+			"type": "audio",
+			"path": "audio/se",
+			"systemId": "sound",
+			"duration": 250,
+			"hint": {
+				"extensions": [
+					".aac",
+					".ogg"
+				]
+			}
+		},
+		"main": {
+			"type": "script",
+			"path": "script/main.js",
+			"global": true
+		},
+		"chara": {
+			"type": "image",
+			"path": "image/chara.png",
+			"width": 32,
+			"height": 32
+		},
+		"nc276103": {
+			"type": "image",
+			"path": "image/nc276103.png",
+			"width": 1650,
+			"height": 660
+		},
+		"nc276354": {
+			"type": "image",
+			"path": "image/nc276354.png",
+			"width": 2160,
+			"height": 720
+		},
+		"card": {
+			"type": "image",
+			"path": "image/card.png",
+			"width": 1200,
+			"height": 300
+		},
+		"hand": {
+			"type": "image",
+			"path": "image/hand.png",
+			"width": 640,
+			"height": 1280
+		},
+		"nc276174": {
+			"type": "audio",
+			"path": "audio/nc276174",
+			"systemId": "music",
+			"duration": 21897,
+			"hint": {
+				"extensions": [
+					".m4a",
+					".ogg"
+				]
+			}
+		},
+		"watch1": {
+			"type": "image",
+			"path": "image/watch1.png",
+			"width": 600,
+			"height": 600
+		},
+		"watch2": {
+			"type": "image",
+			"path": "image/watch2.png",
+			"width": 256,
+			"height": 256
+		},
+		"watch3": {
+			"type": "image",
+			"path": "image/watch3.png",
+			"width": 600,
+			"height": 600
+		},
+		"select": {
+			"type": "image",
+			"path": "image/select.png",
+			"width": 800,
+			"height": 80
+		},
+		"pointer": {
+			"type": "image",
+			"path": "image/pointer.png",
+			"width": 80,
+			"height": 130
+		},
+		"guest": {
+			"type": "image",
+			"path": "image/guest.png",
+			"width": 400,
+			"height": 80
+		},
+		"mei": {
+			"type": "image",
+			"path": "image/mei.png",
+			"width": 80,
+			"height": 80
+		},
+		"nc164764": {
+			"type": "audio",
+			"path": "audio/nc164764",
+			"systemId": "sound",
+			"duration": 6100,
+			"hint": {
+				"extensions": [
+					".m4a",
+					".ogg"
+				]
+			}
+		},
+		"nc314547": {
+			"type": "audio",
+			"path": "audio/nc314547",
+			"systemId": "sound",
+			"duration": 1000,
+			"hint": {
+				"extensions": [
+					".m4a",
+					".ogg"
+				]
+			}
+		},
+		"nc41227": {
+			"type": "audio",
+			"path": "audio/nc41227",
+			"systemId": "sound",
+			"duration": 144,
+			"hint": {
+				"extensions": [
+					".m4a",
+					".ogg"
+				]
+			}
+		}
+	},
+	"moduleMainScripts": {
+		"@akashic-extension/akashic-hover-plugin": "node_modules/@akashic-extension/akashic-hover-plugin/lib/index.js",
+		"@akashic-extension/resolve-player-info": "node_modules/@akashic-extension/resolve-player-info/lib/index.js",
+		"@akashic-extension/akashic-timeline": "node_modules/@akashic-extension/akashic-timeline/lib/index.js"
+	},
+	"environment": {
+		"nicolive": {
+			"supportedModes": [
+				"multi"
+			]
+		},
+		"sandbox-runtime": "3",
+		"external": {
+			"coeLimited": "0",
+			"atsumaru": "0"
+		}
+	},
+	"defaultSkippingScene": "indicator",
+	"globalScripts": [
+		"node_modules/@akashic-extension/akashic-hover-plugin/lib/Converter.js",
+		"node_modules/@akashic-extension/akashic-hover-plugin/lib/HoverPlugin.js",
+		"node_modules/@akashic-extension/akashic-hover-plugin/lib/index.js",
+		"node_modules/@akashic-extension/resolve-player-info/lib/FallbackDialog.js",
+		"node_modules/@akashic-extension/resolve-player-info/lib/index.js",
+		"node_modules/@akashic-extension/akashic-timeline/lib/ActionType.js",
+		"node_modules/@akashic-extension/akashic-timeline/lib/Easing.js",
+		"node_modules/@akashic-extension/akashic-timeline/lib/Timeline.js",
+		"node_modules/@akashic-extension/akashic-timeline/lib/Tween.js",
+		"node_modules/@akashic-extension/akashic-timeline/lib/index.js"
+	]
+}

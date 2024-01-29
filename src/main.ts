@@ -1,5 +1,6 @@
 // akashic init -t typescript
 // npm install -DE @akashic/akashic-engine
+// akashic serve -s nicolive
 
 // 1. (4, 2)に入れて(5, 2)になりました
 //   1-1. リロード(5, 2)で5に入れて何も変わらなかった
@@ -12,7 +13,14 @@
 //   2-2. リロード(5, 2)で2に入れて何も変わらなかった
 //     2-2-1. (5, 2)で5に入れて(6, 1)になりました ok
 
+// 配信者名デフォルト：くりた＋ランダム数値
+// 視聴者名：市民＋通し番号（表示させる） 初投票時に名前付け
+// 勝利数が多いプレイヤーが多く選んだ方を文字などで表示
+// 視聴者側が勝った場合、煽りコメントボタン各種
+// 個人成績用ポイント：負け0、引き分け1、勝利2
+
 import { Easing, Timeline } from "@akashic-extension/akashic-timeline";
+import { CEntity } from "./CEntity";
 
 interface Vote {
 	[index: string]: number;
@@ -44,30 +52,13 @@ function main(): void {
 	const scene = new g.Scene({
 		game: g.game,
 		assetIds: [
-			"chara", "nc276103", "nc276354", "card", "hand",
-			"select", "pointer", "guest", "mei",
-			"watch1", "watch2", "watch3",
-			"nc276174", "nc164764", "nc314547", "nc41227",
+			...CEntity.getImageAssetIDs(),
+			...CEntity.getAudioAssetIDs(),
 		],
 	});
 
 	// フォント
-	const font = new g.DynamicFont({
-		game: g.game,
-		fontFamily: "sans-serif",
-		size: 96,
-		fontColor: "black",
-		strokeColor: "white",
-		strokeWidth: 8,
-	});
-	const guestFont = new g.DynamicFont({
-		game: g.game,
-		fontFamily: "sans-serif",
-		size: 96,
-		fontColor: "orangered",
-		strokeColor: "black",
-		strokeWidth: 8,
-	});
+	CEntity.createFonts();
 
 	// ゲームステータス
 	let gameStatus: GameState = GameState.Waiting;
@@ -79,6 +70,9 @@ function main(): void {
 	// 選択した人数(リスナー用)
 	const selectNum: number[] = [0, 0];
 
+	// タイムライン
+	const tl = new Timeline(scene);
+
 	// =============================================================
 	// ジョイン時処理
 	g.game.onJoin.addOnce((ev: g.JoinEvent) => {
@@ -88,38 +82,23 @@ function main(): void {
 	// =============================================================
 	// シーン読込時処理
 	scene.onLoad.add(() => {
-		// タイムライン
-		const tl = new Timeline(scene);
-
 		// -------------------------------------------------------------
 		// 音アセット
 		// -------------------------------------------------------------
 		// 秒針チクタク音
-		const tickAudioPlayer: g.AudioPlayer = scene.asset.getAudioById("nc276174").play();
+		const tickAudioPlayer: g.AudioPlayer = CEntity.createSndSecond(scene).play();
 		// 画像などがはける音(風切り音)
-		const exit: g.AudioAsset = scene.asset.getAudioById("nc314547");
+		const exit: g.AudioAsset = CEntity.createSndLeave(scene);
 		// カード選択音
-		const audSelect: g.AudioAsset = scene.asset.getAudioById("nc41227");
+		const audSelect: g.AudioAsset = CEntity.createSndSelect(scene);
 
 		// -------------------------------------------------------------
 		// 画像エンティティ
 		// -------------------------------------------------------------
 		// 背景
-		scene.append(new g.Sprite({
-			scene: scene,
-			src: scene.asset.getImageById("nc276354"),
-			anchorX: 0.5,
-			x: g.game.width / 2,
-		}));
-
+		scene.append(CEntity.createBack(scene));
 		// 選んで！
-		const select = new g.Sprite({
-			scene: scene,
-			src: scene.asset.getImageById("select"),
-			anchorX: 0.5,
-			x: g.game.width / 2,
-			y: 16,
-		});
+		const select = CEntity.createSelect(scene);
 		scene.append(select);
 
 		// -------------------------------------------------------------
@@ -133,37 +112,12 @@ function main(): void {
 			local: true,
 		});
 		// 「名」
-		entGuestNum.append(new g.Sprite({
-			scene: scene,
-			src: scene.asset.getImageById("mei"),
-			anchorX: 1.0,
-			anchorY: 1.0,
-			x: - 32,
-			y: - 18,
-		}));
+		entGuestNum.append(CEntity.createPlayerNum(scene));
 		// 数値
-		const lblGuest = new g.Label({
-			scene: scene,
-			font: guestFont,
-			fontSize: 105,
-			text: " " + Object.keys(guestVotes).length,
-			textAlign: "right",
-			width: 32 * 1,
-			anchorX: 1.0,
-			anchorY: 1.0,
-			x: - 32 - 80,
-			y: - 20,
-		});
-		entGuestNum.append(lblGuest);
+		const lblPlayerNum = CEntity.createLblPlayerNum(scene, Object.keys(guestVotes).length);
+		entGuestNum.append(lblPlayerNum);
 		// 「現在の参加者」
-		const sprGuest = new g.Sprite({
-			scene: scene,
-			src: scene.asset.getImageById("guest"),
-			anchorX: 1.0,
-			anchorY: 1.0,
-			x: - 32 - 80 - 54 * 1,
-			y: - 18,
-		});
+		const sprGuest = CEntity.createPlayer(scene);
 		entGuestNum.append(sprGuest);
 		//
 		scene.append(entGuestNum);	// join処理後マスターのみ追加
@@ -171,66 +125,35 @@ function main(): void {
 		// -------------------------------------------------------------
 		// 時計関連
 		// -------------------------------------------------------------
-		const timer = new g.Pane({
+		const watch = new g.Pane({
 			scene: scene, width: 400, height: 600,
 			anchorX: 0.5,
 			anchorY: 0.5,
 			x: 150,
 			y: g.game.height - 180,
 		});
+		const watchCX: number = watch.width / 2;
+		const watchCY: number = watch.height / 2;
 		// 時計盤
-		const count = new g.Sprite({
-			scene: scene,
-			src: scene.asset.getImageById("watch1"),
-			anchorX: 0.5,
-			anchorY: 0.5,
-			x: timer.width / 2,
-			y: timer.height / 2,
-			angle: -10,
-		});
-		timer.append(count);
+		const count = CEntity.createDial(scene, watchCX, watchCY);
+		watch.append(count);
 		// 秒針
-		const seconds = new g.Sprite({
-			scene: scene,
-			src: scene.asset.getImageById("watch2"),
-			anchorX: 0.5,
-			anchorY: 0.5,
-			x: timer.width / 2,
-			y: timer.height / 2,
-			angle: -10,
-		});
-		timer.append(seconds);
+		const seconds = CEntity.createSecond(scene, watchCX, watchCY);
+		watch.append(seconds);
 		// ケースやベルト
-		const caseBelt = new g.Sprite({
-			scene: scene,
-			src: scene.asset.getImageById("watch3"),
-			anchorX: 0.5,
-			anchorY: 0.5,
-			x: timer.width / 2,
-			y: timer.height / 2,
-			angle: -10,
-		});
-		timer.append(caseBelt);
+		const caseBelt = CEntity.createBezel(scene, watchCX, watchCY);
+		watch.append(caseBelt);
 		// 秒数ラベル
-		const lbl = new g.Label({
-			scene: scene,
-			font: font,
-			fontSize: 150,
-			text: "",
-			width: count.width,
-			anchorY: 1.0,
-			x: -10,
-			y: timer.height - 78,
+		const lblSecond = CEntity.createLblSecond(scene, count.width, watch.height - 78);
+		lblSecond.onUpdate.add(() => {
+			lblSecond.text = " " + Math.ceil((370 + seconds.angle) / 6);
+			lblSecond.invalidate();
 		});
-		lbl.onUpdate.add(() => {
-			lbl.text = " " + Math.ceil((370 + seconds.angle) / 6);
-			lbl.invalidate();
-		});
-		timer.append(lbl);
+		watch.append(lblSecond);
 		//
-		// timer.angle = -10;
-		timer.scale(0.7);
-		scene.append(timer);
+		// watch.angle = -10;
+		watch.scale(0.7);
+		scene.append(watch);
 
 		// -------------------------------------------------------------
 		// カード関連
@@ -270,7 +193,6 @@ function main(): void {
 			card[i].onPointDown.add((ev: g.PointDownEvent) => {
 				// 終了処理
 				if (gameStatus !== GameState.Game) return;
-				if (Math.ceil((360 + seconds.angle) / 6) <= 0) return;	// 制限時間が無い場合終了
 				if (ev.player == null) return;			// プレイヤープロパティが取得できない場合終了
 				if (ev.player.id == null) return;		// プレイヤーIDが取得できない場合終了
 				// (選択した)カードのポインターを表示切替
@@ -423,24 +345,21 @@ function main(): void {
 		// 	entCard[i].append(cardFrame[i]);
 		// }
 		// カード選択情報
-		const labelCard: g.Label[] = new Array<g.Label>(2);
+		const lblVoteNum: g.Label[] = new Array<g.Label>(2);
 		for (let i = 0; i < card.length; i++) {
-			labelCard[i] = new g.Label({
-				scene: scene,
-				font: font,
-				fontSize: 64,
-				text: `${selectNum[i]}人`,
-				textAlign: "center",
-				width: card[i].width * card[i].scaleX,
-				anchorX: 0.5,
-				y: card[i].height * card[i].scaleY / 2,
-			});
-			entCard[i].append(labelCard[i]);
+			lblVoteNum[i] = CEntity.createLblVoteNum(
+				scene, `${selectNum[i]}人`, card[i].width * card[i].scaleX, card[i].height * card[i].scaleY / 2);
+			entCard[i].append(lblVoteNum[i]);
 		}
 		// カードエンティティ類をappend
 		for (let i = 0; i < entCard.length; i++) {
 			scene.append(entCard[i]);
 		}
+
+		// 〇票で選択されました
+		const lblWinningNum = CEntity.createLblWinningNum(scene);
+		scene.append(lblWinningNum);
+
 
 		// 手
 		// const hand = new g.Sprite({
@@ -456,8 +375,8 @@ function main(): void {
 		// ラベルの更新
 		function redrawLabels(selIdx: number): void {
 			const unselIdx: number = 1 - selIdx;
-			const lblSelected: g.Label = labelCard[selIdx];
-			const lblUnselected: g.Label = labelCard[unselIdx];
+			const lblSelected: g.Label = lblVoteNum[selIdx];
+			const lblUnselected: g.Label = lblVoteNum[unselIdx];
 			// 人数の更新
 			lblSelected.text = ` ${selectNum[selIdx]}人 `;
 			lblSelected.invalidate();
@@ -474,9 +393,9 @@ function main(): void {
 			// マスターに表示される参加者数関連
 			const strGuestNum: string = Object.keys(guestVotes).length.toString();
 			const guestDigitNum: number = strGuestNum.length;
-			lblGuest.width = 32 * guestDigitNum;
-			lblGuest.text = ` ${strGuestNum} `;
-			lblGuest.invalidate();
+			lblPlayerNum.width = 32 * guestDigitNum;
+			lblPlayerNum.text = ` ${strGuestNum} `;
+			lblPlayerNum.invalidate();
 			sprGuest.x = - 32 - 80 - 52 * guestDigitNum;
 			sprGuest.modified();
 		}
@@ -513,8 +432,8 @@ function main(): void {
 			//
 			if (g.game.selfId === gameMasterId) {
 				card[0].frameNumber = CardType.emperor;
-				labelCard[0].hide();
-				labelCard[1].hide();
+				lblVoteNum[0].hide();
+				lblVoteNum[1].hide();
 				entGuestNum.show();
 			} else {
 				card[0].frameNumber = CardType.slave;
@@ -533,8 +452,9 @@ function main(): void {
 
 		// =============================================================
 		// シーンメッセージイベント
+		let sameVoteIdx: number = -1;
 		scene.onMessage.add((ev: g.MessageEvent) => {
-			let selIdx: number = 0;
+			let selIdx: number = -1;
 			if (gameStatus === GameState.Game) {
 				// 終了処理
 				if (ev.player == null || ev.player.id == null) return;
@@ -551,17 +471,21 @@ function main(): void {
 						selectNum[1]++;
 						if (ev.data.message === "Selected1") selectNum[0]--;
 					}
+				} else if (ev.data.message === "SameVote") {
+					sameVoteIdx = ev.data.data;
 				}
-				// 投票配列に登録/更新
-				if (ev.player.id === gameMasterId) {
-					masterVote[ev.player.id] = selIdx;
-				} else {
-					guestVotes[ev.player.id] = selIdx;
+				// 投票配列に登録/更
+				if (selIdx !== -1) {
+					if (ev.player.id === gameMasterId) {
+						masterVote[ev.player.id] = selIdx;
+					} else {
+						guestVotes[ev.player.id] = selIdx;
+					}
+					// 参加人数(リスナー)
+					// guestNum = selectNum[0] + selectNum[1];
+					// ラベルの更新
+					redrawLabels(selIdx);
 				}
-				// 参加人数(リスナー)
-				// guestNum = selectNum[0] + selectNum[1];
-				// ラベルの更新
-				redrawLabels(selIdx);
 			}
 		});
 
@@ -576,8 +500,17 @@ function main(): void {
 			} else if (gameStatus === GameState.Title) {
 				gameStatus = GameState.GameInit;
 			} else if (gameStatus === GameState.GameInit) {
+				const animSec: number = 60000;
 				// 秒針アニメーション
-				tl.create(seconds).rotateBy(-360, 60000).call(() => {
+				tl.create(seconds).rotateBy(-360, animSec).call(() => {
+					card[0].touchable = false;
+					card[1].touchable = false;
+					// 視聴者側が道標だった場合
+					// 配信者側だけで判定し、raiseEventを発生させる
+					if (g.game.selfId === gameMasterId && selectNum[0] === selectNum[1]) {
+						const r = Math.floor(2 * g.game.localRandom.generate());
+						g.game.raiseEvent(new g.MessageEvent({ message: "SameVote", data: r }));
+					}
 					tickAudioPlayer.changeVolume(0.8);
 				}).wait(200).call(() => {
 					tickAudioPlayer.changeVolume(0.6);
@@ -590,6 +523,10 @@ function main(): void {
 				}).wait(2200).call(() => {
 					gameStatus = GameState.ResultInit;
 				});
+				// 投票数ラベル
+				tl.create(lblVoteNum[0]).wait(30000).fadeOut(20000);
+				tl.create(lblVoteNum[1]).wait(30000).fadeOut(20000);
+				// Init系は即ステート遷移
 				gameStatus = GameState.Game;
 			} else if (gameStatus === GameState.Game) {
 				// ※リロード/シークバー押し対策
@@ -597,7 +534,19 @@ function main(): void {
 				if (cardPointer[0].visible() && cardPointer[1].visible()) {
 					controlDisplayBug();
 				}
+				// Scene.setTimeOutが誤差があるので時間(Date.now)で判定
+				// if (flgGetTime && Date.now() - timeStart >= 60000) {
+				// 	card[0].touchable = false;
+				// 	card[1].touchable = false;
+				// 	gameStatus = GameState.ResultInit;
+				// 	flgGetTime = false;
+				// }
 			} else if (gameStatus === GameState.ResultInit) {
+				// 投票数ラベル
+				lblVoteNum[0].opacity = 1.0;
+				lblVoteNum[0].modified();
+				lblVoteNum[1].opacity = 1.0;
+				lblVoteNum[1].modified();
 				// 選んで！退場アニメーション
 				tl.create(select).call(() => {
 					exit.play();
@@ -606,7 +555,7 @@ function main(): void {
 				tl.create(entGuestNum)
 					.fadeOut(500, Easing.easeInOutQuint).con().moveBy(0, 100, 500, Easing.easeInOutQuint);
 				// 時計退場アニメーション
-				tl.create(timer).wait(500).call(() => {
+				tl.create(watch).wait(500).call(() => {
 					exit.play();
 				}).fadeOut(500, Easing.easeInOutQuint).con().moveBy(-300, 0, 500, Easing.easeInOutQuint);
 				// 指削除アニメーション
@@ -616,30 +565,65 @@ function main(): void {
 					.fadeOut(500, Easing.easeInOutBack);
 				// 選択アニメーション：マスター側
 				if (g.game.selfId != null) {
-					if (g.game.selfId in masterVote) {
-						const selIdx: number = masterVote[g.game.selfId];
+					let selIdx: number = 0;
+					// マスターが選択した場合
+					if (g.game.selfId === gameMasterId) {
+						console.log("selfID:[" + g.game.selfId + "]");
+						console.log("selNum[0]:[" + selectNum[0] + "]");
+						console.log("selNum[1]:[" + selectNum[1] + "]");
+						// if (selectNum[0] === selectNum[1]) {
+						// }
+						if (g.game.selfId in masterVote) {
+							selIdx = masterVote[g.game.selfId];
+						} else {
+							selIdx = animSelection(scene, cardShadow);
+						}
 						tl.create(card[selIdx]).wait(1000)
-							.rotateTo(0, 2000);
+							.rotateTo(0, 2000).wait(2000).call(() => {
+								gameStatus = GameState.Result;
+							});
 						tl.create(entCard[selIdx]).wait(1000)
 							.moveTo(g.game.width / 2, g.game.height / 2, 2000).con()
 							.scaleTo(1.4, 1.4, 2000);
-						// const angle: number = card[1 - selIdx].angle;
 						tl.create(entCard[1 - selIdx]).wait(1000).fadeOut(2000);
+					} else {		// プレイヤー側
+						// 選択した人数に差異がある場合
+						let selCnt: number = 0;
+						if (selectNum[0] !== selectNum[1]) {
+							selIdx = (selectNum[0] > selectNum[1]) ? 0 : 1;
+							cardShadow[selIdx].hide();
+							cardShadow[1 - selIdx].show();
+						} else {			// 選択が同数だった場合
+							selIdx = sameVoteIdx;
+							// animSelection(scene, cardShadow, selIdx);
+						}
+						selCnt = Math.max(selectNum[0], selectNum[1]);
+						console.log("id:[" + g.game.selfId + "]");
+						console.log("selected:[" + selIdx + "]");
+						// 〇票で選択されましたラベル
+						lblWinningNum.text = `${selCnt}票で選択されました`;
+						lblWinningNum.invalidate();
+						lblWinningNum.show();
+						// tl.create(card[selIdx]).wait(1000)
+						// 	.rotateTo(0, 2000);
+						// tl.create(entCard[selIdx]).wait(1000)
+						// 	.moveTo(g.game.width / 2, g.game.height / 2, 2000).con()
+						// 	.scaleTo(1.4, 1.4, 2000).call(() => {
+						// 		gameStatus = GameState.Result;
+						// 	});
+						// tl.create(entCard[1 - selIdx]).wait(1000).fadeOut(2000);
+						// 3秒後にすべてを消す
+						tl.create(lblWinningNum).wait(3000).call(() => {
+							lblWinningNum.hide();
+							entCard[0].hide();
+							entCard[1].hide();
+							gameStatus = GameState.Result;
+						});
 					}
+					gameStatus = GameState.Result;
 				}
-				// 選択アニメーション：プレイヤー側
-				if (g.game.selfId !== gameMasterId) {
-					if (selectNum[0] !== selectNum[1]) {
-						const selIdx: number = (selectNum[0] > selectNum[1]) ? 0 : 1;
-						tl.create(card[selIdx]).wait(1000)
-							.rotateTo(0, 2000);
-						tl.create(entCard[selIdx]).wait(1000)
-							.moveTo(g.game.width / 2, g.game.height / 2, 2000).con()
-							.scaleTo(1.4, 1.4, 2000);
-						tl.create(entCard[1 - selIdx]).wait(1000).fadeOut(2000);
-					}
-				}
-				gameStatus = GameState.Result;
+			} else if (gameStatus === GameState.Result) {
+				console.log("");
 			}
 		}
 		scene.onUpdate.add(mainLoop);
@@ -648,3 +632,31 @@ function main(): void {
 };
 
 export = main;
+
+function animSelection(scene: g.Scene, card: g.Sprite[], _selIdx: number = -1): number {
+	let selIdx = -1;
+	if (_selIdx === -1) {
+		selIdx = Math.floor(2 * g.game.localRandom.generate());
+	} else {
+		selIdx = _selIdx;
+	}
+	card[1].show();
+	const intervalID = scene.setInterval(() => {
+		if (card[0].visible()) {
+			card[0].hide();
+		} else {
+			card[0].show();
+		}
+		if (card[1].visible()) {
+			card[1].hide();
+		} else {
+			card[1].show();
+		}
+	}, 100);
+	scene.setTimeout(() => {
+		card[selIdx].hide();
+		card[1 - selIdx].show();
+		scene.clearInterval(intervalID);
+	}, 1000);
+	return selIdx;
+}

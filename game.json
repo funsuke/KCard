@@ -146,6 +146,11 @@
 					".ogg"
 				]
 			}
+		},
+		"CEntity": {
+			"type": "script",
+			"path": "script/CEntity.js",
+			"global": true
 		}
 	},
 	"moduleMainScripts": {
@@ -170,12 +175,12 @@
 		"node_modules/@akashic-extension/akashic-hover-plugin/lib/Converter.js",
 		"node_modules/@akashic-extension/akashic-hover-plugin/lib/HoverPlugin.js",
 		"node_modules/@akashic-extension/akashic-hover-plugin/lib/index.js",
-		"node_modules/@akashic-extension/resolve-player-info/lib/FallbackDialog.js",
-		"node_modules/@akashic-extension/resolve-player-info/lib/index.js",
 		"node_modules/@akashic-extension/akashic-timeline/lib/ActionType.js",
 		"node_modules/@akashic-extension/akashic-timeline/lib/Easing.js",
 		"node_modules/@akashic-extension/akashic-timeline/lib/Timeline.js",
 		"node_modules/@akashic-extension/akashic-timeline/lib/Tween.js",
-		"node_modules/@akashic-extension/akashic-timeline/lib/index.js"
+		"node_modules/@akashic-extension/akashic-timeline/lib/index.js",
+		"node_modules/@akashic-extension/resolve-player-info/lib/FallbackDialog.js",
+		"node_modules/@akashic-extension/resolve-player-info/lib/index.js"
 	]
 }
